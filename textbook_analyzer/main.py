@@ -62,12 +62,33 @@ def main():
 
     # Excel生成命令
     excel_parser = subparsers.add_parser('generate-excel', help='生成Excel表格')
-    excel_parser.add_argument('--input', '-i', required=True, help='输入JSON目录路径')
+    
+    # 输入选项（互斥）
+    excel_input_group = excel_parser.add_mutually_exclusive_group(required=True)
+    excel_input_group.add_argument('--input', '-i', help='输入JSON文件目录路径')
+    excel_input_group.add_argument('--files', '-f', nargs='+', help='指定要处理的JSON文件路径列表')
+    
     excel_parser.add_argument('--output', '-o', required=True, help='输出Excel目录路径')
     excel_parser.add_argument('--api_key', '-k', help='DeepSeek API密钥')
     excel_parser.add_argument('--model', '-m', default='deepseek-reasoner', 
                              choices=['deepseek-reasoner', 'deepseek-chat'],
                              help='使用的模型名称')
+    excel_parser.add_argument('--verbose', '-v', action='store_true', help='显示详细信息')
+
+    # Excel合并命令 - 汇总多个Excel文件成统一规范
+    merge_parser = subparsers.add_parser('merge-excel', help='合并Excel文件成统一规范')
+    
+    # 输入选项（互斥）
+    merge_input_group = merge_parser.add_mutually_exclusive_group(required=True)
+    merge_input_group.add_argument('--input', '-i', help='输入Excel文件目录路径')
+    merge_input_group.add_argument('--files', '-f', nargs='+', help='指定要合并的Excel文件路径列表')
+    
+    merge_parser.add_argument('--output', '-o', required=True, help='输出统一Excel文件路径')
+    merge_parser.add_argument('--api_key', '-k', help='DeepSeek API密钥')
+    merge_parser.add_argument('--model', '-m', default='deepseek-reasoner', 
+                             choices=['deepseek-reasoner', 'deepseek-chat'],
+                             help='使用的模型名称')
+    merge_parser.add_argument('--verbose', '-v', action='store_true', help='显示详细信息')
 
     # 解析命令行参数
     args = parser.parse_args()
@@ -110,14 +131,12 @@ def main():
         _handle_culture_extraction(args)
     
     elif args.command == 'generate-excel':
-        try:
-            api_key = env_config.get_api_key(args.api_key)
-        except ValueError as e:
-            print(f"错误：{e}")
-            sys.exit(1)
-            
-        from textbook_analyzer.analysis.culture_summarizer import summarize_culture_terms
-        summarize_culture_terms(args.input, args.output, api_key, args.model)
+        # 新的Excel生成逻辑
+        _handle_excel_generation(args)
+    
+    elif args.command == 'merge-excel':
+        # 新的Excel合并逻辑
+        _handle_excel_merge(args)
     
     else:
         parser.print_help()
@@ -346,6 +365,214 @@ def _extract_culture_terms_batch(input_files: List[str], output_dir: str, api_ke
         return processed_files
     
     return asyncio.run(process_batch())
+
+
+def _handle_excel_generation(args):
+    """处理Excel生成命令"""
+    try:
+        api_key = env_config.get_api_key(args.api_key)
+    except ValueError as e:
+        print(f"错误：{e}")
+        sys.exit(1)
+    
+    if args.input:
+        # 目录模式
+        if not os.path.exists(args.input):
+            print(f"错误：输入目录 '{args.input}' 不存在")
+            sys.exit(1)
+        
+        print(f"模式：目录处理")
+        print(f"输入目录: {args.input}")
+        print(f"输出目录: {args.output}")
+        print(f"使用模型: {args.model}")
+        print("-" * 50)
+        
+        # 处理整个目录
+        from textbook_analyzer.analysis.culture_summarizer import summarize_culture_terms
+        summarize_culture_terms(args.input, args.output, api_key, args.model)
+        
+    elif args.files:
+        # 指定文件模式
+        input_files = args.files
+        
+        # 检查文件是否存在
+        missing_files = []
+        existing_files = []
+        for file_path in input_files:
+            if not os.path.exists(file_path):
+                missing_files.append(file_path)
+            elif not file_path.endswith('.json'):
+                print(f"警告：跳过非JSON文件 '{file_path}'")
+            else:
+                existing_files.append(file_path)
+        
+        if missing_files:
+            print("错误：以下文件不存在:")
+            for file_path in missing_files:
+                print(f"  - {file_path}")
+            sys.exit(1)
+        
+        if not existing_files:
+            print("错误：没有找到有效的JSON文件")
+            sys.exit(1)
+        
+        print(f"模式：指定文件处理")
+        print(f"待处理文件数: {len(existing_files)}")
+        print(f"输出目录: {args.output}")
+        print(f"使用模型: {args.model}")
+        print("文件列表:")
+        for i, file_path in enumerate(existing_files, 1):
+            print(f"  {i}. {os.path.basename(file_path)}")
+        print("-" * 50)
+        
+        # 处理指定文件
+        processed_files = _generate_excel_batch(
+            input_files=existing_files,
+            output_dir=args.output,
+            api_key=api_key,
+            model=args.model,
+            verbose=args.verbose
+        )
+    
+    # 显示处理结果
+    print("\n" + "=" * 50)
+    if args.input:
+        print("✅ Excel生成完成！")
+    else:
+        if processed_files:
+            print(f"✅ Excel生成完成！成功处理了 {len(processed_files)} 个文件")
+            print("生成的Excel文件:")
+            for file_path in processed_files:
+                print(f"  - {os.path.basename(file_path)}")
+        else:
+            print("❌ 没有成功处理任何文件")
+    print("=" * 50)
+
+
+def _generate_excel_batch(input_files: List[str], output_dir: str, api_key: str = None, 
+                         model: str = "deepseek-reasoner", verbose: bool = False) -> List[str]:
+    """
+    批量生成Excel文件
+    
+    Args:
+        input_files (List[str]): 输入JSON文件路径列表
+        output_dir (str): 输出目录
+        api_key (str, optional): DeepSeek API密钥
+        model (str): 使用的模型名称
+        verbose (bool): 是否显示详细信息
+        
+    Returns:
+        List[str]: 处理成功的文件列表
+    """
+    from textbook_analyzer.analysis.culture_summarizer import CultureSummarizer
+    
+    # 确保输出目录存在
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # 创建文化词条整理器
+    summarizer = CultureSummarizer(api_key, model)
+    
+    # 处理每个文件
+    processed_files = []
+    for i, input_file in enumerate(input_files, 1):
+        print(f"处理文件 {i}/{len(input_files)}: {os.path.basename(input_file)}")
+        
+        # 生成输出文件名
+        output_file = os.path.basename(input_file).replace('.json', '.xlsx')
+        output_path = os.path.join(output_dir, output_file)
+        
+        # 处理文件
+        if summarizer.process_file(input_file, output_path):
+            processed_files.append(output_path)
+            print(f"✅ 成功生成: {os.path.basename(output_path)}")
+        else:
+            print(f"❌ 处理失败: {os.path.basename(input_file)}")
+    
+    return processed_files
+
+
+def _handle_excel_merge(args):
+    """处理Excel合并命令"""
+    try:
+        api_key = env_config.get_api_key(args.api_key)
+    except ValueError as e:
+        print(f"错误：{e}")
+        sys.exit(1)
+    
+    if args.input:
+        # 目录模式
+        if not os.path.exists(args.input):
+            print(f"错误：输入目录 '{args.input}' 不存在")
+            sys.exit(1)
+        
+        print(f"模式：目录合并")
+        print(f"输入目录: {args.input}")
+        print(f"输出文件: {args.output}")
+        print(f"使用模型: {args.model}")
+        print("-" * 50)
+        
+        # 合并整个目录
+        from textbook_analyzer.analysis.culture_merger import merge_culture_excel
+        success = merge_culture_excel(
+            input_dir=args.input,
+            output_path=args.output,
+            api_key=api_key,
+            model=args.model
+        )
+        
+    elif args.files:
+        # 指定文件模式
+        input_files = args.files
+        
+        # 检查文件是否存在
+        missing_files = []
+        existing_files = []
+        for file_path in input_files:
+            if not os.path.exists(file_path):
+                missing_files.append(file_path)
+            elif not (file_path.endswith('.xlsx') or file_path.endswith('.xls')):
+                print(f"警告：跳过非Excel文件 '{file_path}'")
+            else:
+                existing_files.append(file_path)
+        
+        if missing_files:
+            print("错误：以下文件不存在:")
+            for file_path in missing_files:
+                print(f"  - {file_path}")
+            sys.exit(1)
+        
+        if not existing_files:
+            print("错误：没有找到有效的Excel文件")
+            sys.exit(1)
+        
+        print(f"模式：指定文件合并")
+        print(f"待合并文件数: {len(existing_files)}")
+        print(f"输出文件: {args.output}")
+        print(f"使用模型: {args.model}")
+        print("文件列表:")
+        for i, file_path in enumerate(existing_files, 1):
+            print(f"  {i}. {os.path.basename(file_path)}")
+        print("-" * 50)
+        
+        # 合并指定文件
+        from textbook_analyzer.analysis.culture_merger import merge_culture_excel
+        success = merge_culture_excel(
+            input_files=existing_files,
+            output_path=args.output,
+            api_key=api_key,
+            model=args.model
+        )
+    
+    # 显示处理结果
+    print("\n" + "=" * 50)
+    if success:
+        print("✅ Excel合并完成！")
+        print(f"统一规范文件: {os.path.basename(args.output)}")
+        print(f"保存路径: {args.output}")
+    else:
+        print("❌ Excel合并失败")
+    print("=" * 50)
+
 
 if __name__ == "__main__":
     main() 
