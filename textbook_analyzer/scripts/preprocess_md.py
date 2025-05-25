@@ -5,7 +5,7 @@ import os
 import sys
 import argparse
 from pathlib import Path
-from .process_directory import process_directory
+from .process_directory import process_directory, process_specific_files
 
 def parse_processor_options(images: bool, titles: bool, all_processors: bool, verbose: bool):
     """
@@ -55,10 +55,13 @@ def main():
     # 创建命令行参数解析器
     parser = argparse.ArgumentParser(description='MD文件预处理工具 - 统一入口')
     
-    # 必需参数
-    parser.add_argument('--input', '-i', 
-                      required=True,
+    # 必需参数（二选一）
+    input_group = parser.add_mutually_exclusive_group(required=True)
+    input_group.add_argument('--input-dir', '-i', 
                       help='输入MD文件目录的路径')
+    input_group.add_argument('--files', '-f', nargs='+',
+                      help='指定要处理的MD文件路径（支持多个文件）')
+    
     parser.add_argument('--output', '-o',
                       required=True,
                       help='输出MD文件目录的路径')
@@ -82,11 +85,6 @@ def main():
     # 解析命令行参数
     args = parser.parse_args()
     
-    # 检查输入路径是否存在
-    if not os.path.exists(args.input):
-        print(f"错误：输入路径 '{args.input}' 不存在")
-        sys.exit(1)
-    
     # 解析处理器选项
     process_images, process_titles = parse_processor_options(
         args.images, args.titles, args.all, args.verbose
@@ -94,17 +92,37 @@ def main():
     
     # 执行处理
     try:
-        process_directory(
-            input_dir=args.input,
-            output_dir=args.output,
-            verbose=args.verbose,
-            process_images=process_images,
-            process_titles=process_titles
-        )
+        if args.input_dir:
+            # 目录模式
+            if not os.path.exists(args.input_dir):
+                print(f"错误：输入目录 '{args.input_dir}' 不存在")
+                sys.exit(1)
+                
+            process_directory(
+                input_dir=args.input_dir,
+                output_dir=args.output,
+                verbose=args.verbose,
+                process_images=process_images,
+                process_titles=process_titles
+            )
+            if args.verbose:
+                print(f"输入目录: {args.input_dir}")
+                print(f"输出目录: {args.output}")
+                
+        elif args.files:
+            # 文件列表模式
+            process_specific_files(
+                file_paths=args.files,
+                output_dir=args.output,
+                verbose=args.verbose,
+                process_images=process_images,
+                process_titles=process_titles
+            )
+            if args.verbose:
+                print(f"处理文件: {args.files}")
+                print(f"输出目录: {args.output}")
+        
         print("MD文件预处理完成！")
-        if args.verbose:
-            print(f"输入目录: {args.input}")
-            print(f"输出目录: {args.output}")
             
     except Exception as e:
         print(f"处理失败：{e}")

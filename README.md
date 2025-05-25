@@ -38,6 +38,7 @@ textbook_analyzer/
 │   ├── extract_culture.py        # 提取文化词条
 │   ├── extract_structure.py      # 提取文档结构
 │   ├── generate_excel.py         # 生成Excel表格
+│   ├── preprocess_md.py          # MD文件预处理（统一入口）
 │   └── process_directory.py      # 批量处理目录
 ├── utils/               # 工具函数
 │   └── file_utils.py    # 文件处理工具
@@ -68,25 +69,77 @@ pip install -r requirements.txt
 
 ## 使用方法
 
-### 1. 处理MD文件
+### 主程序使用方式
+
+教材分析工具提供了统一的主程序入口，支持多种子命令：
+
+#### 1. MD文件预处理
 ```bash
-python -m textbook_analyzer.scripts.process_directory <input_dir> <output_dir>
+# 使用所有处理逻辑（图片 + 标题）
+python -m textbook_analyzer.main preprocess --input data/md/manual --output data/md/manual_processed --all --verbose
+
+# 只处理图片链接
+python -m textbook_analyzer.main preprocess --input data/md/manual --output data/md/manual_processed --images --verbose
+
+# 只处理标题格式
+python -m textbook_analyzer.main preprocess --input data/md/manual --output data/md/manual_processed --titles --verbose
+
+# 同时启用图片和标题处理
+python -m textbook_analyzer.main preprocess --input data/md/manual --output data/md/manual_processed --images --titles --verbose
 ```
 
-### 2. 提取文档结构
+#### 2. 提取文档结构
 ```bash
-python -m textbook_analyzer.scripts.extract_structure --input <input_file> --output <output_file>
+python -m textbook_analyzer.main extract-structure --input data/md/manual_processed --output data/json/structure
 ```
 
-### 3. 提取文化词条
+#### 3. 提取文化词条
 ```bash
-python -m textbook_analyzer.scripts.extract_culture_async --input <input_dir> --output <output_dir> --api_key <your_api_key>
+# 同步模式
+python -m textbook_analyzer.main extract-culture --input data/json/structure --output data/json/culture --api_key YOUR_API_KEY
+
+# 异步模式（推荐，提高效率）
+python -m textbook_analyzer.main extract-culture --input data/json/structure --output data/json/culture --api_key YOUR_API_KEY --async_mode
 ```
 
-### 4. 生成Excel表格
+#### 4. 生成Excel表格
 ```bash
-python -m textbook_analyzer.scripts.generate_excel --input <input_dir> --output <output_dir> --api_key <your_api_key> --model <model_name>
+python -m textbook_analyzer.main generate-excel --input data/json/culture --output data/excel --api_key YOUR_API_KEY --model deepseek-reasoner
 ```
+
+### 独立脚本使用方式
+
+您也可以直接使用独立的脚本文件：
+
+#### MD文件预处理（独立脚本）
+```bash
+# 灵活的预处理选项
+python -m textbook_analyzer.scripts.preprocess_md --input data/md/manual --output data/md/manual_processed --images --titles --verbose
+```
+
+#### 其他脚本
+```bash
+# 提取文档结构
+python -m textbook_analyzer.scripts.extract_structure --input data/md/manual_processed --output data/json/structure
+
+# 异步提取文化词条
+python -m textbook_analyzer.scripts.extract_culture_async --input data/json/structure --output data/json/culture --api_key YOUR_API_KEY
+
+# 生成Excel表格
+python -m textbook_analyzer.scripts.generate_excel --input data/json/culture --output data/excel --api_key YOUR_API_KEY
+```
+
+### 处理流程说明
+
+1. **MD文件预处理**：将`manual`文件夹中的原始MD文件处理为标准化格式，输出到`manual_processed`文件夹
+   - 图片链接处理：标准化图片链接格式
+   - 标题处理：统一标题层级格式
+
+2. **文档结构提取**：从预处理后的MD文件中提取结构化信息，保存为JSON格式
+
+3. **文化词条提取**：利用LLM分析文档结构，提取文化相关词条
+
+4. **Excel表格生成**：将提取的文化词条整理成Excel表格，便于分析和展示
 
 ## 依赖项
 
