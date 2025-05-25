@@ -48,12 +48,14 @@ textbook_analyzer/
 ## 安装
 
 1. 克隆仓库
+
 ```bash
 git clone <repository-url>
 cd textbook_analyzer
 ```
 
 2. 创建并激活虚拟环境
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
@@ -62,6 +64,7 @@ source .venv/bin/activate  # Linux/Mac
 ```
 
 3. 安装依赖
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -69,21 +72,31 @@ pip install -r requirements.txt
 ## 使用方法
 
 ### 1. 处理MD文件
+
 ```bash
 python -m textbook_analyzer.scripts.process_directory <input_dir> <output_dir>
 ```
 
-### 2. 提取文档结构
+### 按一定规则将手动标注后的md文件
+
+```python
+python -m textbook_analyzer.main preprocess --input data/md/manual --output data/md/manual_processed
+```
+
+2. 提取文档结构
+
 ```bash
 python -m textbook_analyzer.scripts.extract_structure --input <input_file> --output <output_file>
 ```
 
 ### 3. 提取文化词条
+
 ```bash
 python -m textbook_analyzer.scripts.extract_culture_async --input <input_dir> --output <output_dir> --api_key <your_api_key>
 ```
 
 ### 4. 生成Excel表格
+
 ```bash
 python -m textbook_analyzer.scripts.generate_excel --input <input_dir> --output <output_dir> --api_key <your_api_key> --model <model_name>
 ```
@@ -98,4 +111,4 @@ python -m textbook_analyzer.scripts.generate_excel --input <input_dir> --output 
 
 ## 许可证
 
-[MIT](LICENSE) 
+[MIT](LICENSE)

@@ -2,7 +2,8 @@ from pathlib import Path
 from ..preprocessors.md_preprocessor import MDPreprocessor
 from ..utils.file_utils import get_md_files, ensure_dir
 
-def process_directory(input_dir: str, output_dir: str, verbose: bool = False) -> None:
+def process_directory(input_dir: str, output_dir: str, verbose: bool = False, 
+                     process_images: bool = True, process_titles: bool = True) -> None:
     """
     处理指定目录下的所有MD文件
     
@@ -10,6 +11,8 @@ def process_directory(input_dir: str, output_dir: str, verbose: bool = False) ->
         input_dir (str): 输入目录路径
         output_dir (str): 输出目录路径
         verbose (bool): 是否显示详细信息
+        process_images (bool): 是否处理图片链接，默认True
+        process_titles (bool): 是否处理标题，默认True
     """
     # 确保输出目录存在
     ensure_dir(output_dir)
@@ -21,7 +24,7 @@ def process_directory(input_dir: str, output_dir: str, verbose: bool = False) ->
         print(f"找到 {len(md_files)} 个MD文件")
     
     # 创建预处理器实例
-    processor = MDPreprocessor(input_dir, output_dir)
+    processor = MDPreprocessor(input_dir, output_dir, process_images, process_titles)
     
     # 处理每个文件
     for md_file in md_files:

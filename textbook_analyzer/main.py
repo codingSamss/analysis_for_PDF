@@ -25,6 +25,10 @@ def main():
     preprocess_parser = subparsers.add_parser('preprocess', help='预处理MD文件')
     preprocess_parser.add_argument('--input', '-i', required=True, help='输入文件或目录路径')
     preprocess_parser.add_argument('--output', '-o', required=True, help='输出目录路径')
+    preprocess_parser.add_argument('--images', action='store_true', help='启用图片链接处理')
+    preprocess_parser.add_argument('--titles', action='store_true', help='启用标题格式处理')
+    preprocess_parser.add_argument('--all', action='store_true', help='启用所有处理逻辑')
+    preprocess_parser.add_argument('--verbose', '-v', action='store_true', help='显示详细信息')
 
     # 结构提取命令
     structure_parser = subparsers.add_parser('extract-structure', help='提取文档结构')
@@ -53,8 +57,32 @@ def main():
 
     # 处理命令
     if args.command == 'preprocess':
+        from textbook_analyzer.scripts.preprocess_md import parse_processor_options
         from textbook_analyzer.scripts.process_directory import process_directory
-        process_directory(args.input, args.output)
+        
+        # 检查输入路径
+        if not os.path.exists(args.input):
+            print(f"错误：输入路径 '{args.input}' 不存在")
+            sys.exit(1)
+        
+        # 解析处理器选项
+        process_images, process_titles = parse_processor_options(
+            args.images, args.titles, args.all, getattr(args, 'verbose', True)
+        )
+        
+        # 执行预处理
+        try:
+            process_directory(
+                input_dir=args.input,
+                output_dir=args.output,
+                verbose=getattr(args, 'verbose', True),
+                process_images=process_images,
+                process_titles=process_titles
+            )
+            print("MD文件预处理完成！")
+        except Exception as e:
+            print(f"预处理失败：{e}")
+            sys.exit(1)
     
     elif args.command == 'extract-structure':
         from textbook_analyzer.scripts.extract_structure import extract_structure

@@ -6,18 +6,25 @@ from .image_processor import ImageProcessor
 from .title_processor import TitleProcessor
 
 class MDPreprocessor:
-    def __init__(self, md_dir: str, output_dir: str):
+    def __init__(self, md_dir: str, output_dir: str, process_images: bool = True, process_titles: bool = True):
         """
         初始化MD预处理器
         
         Args:
             md_dir (str): MD文件所在目录
             output_dir (str): 输出目录
+            process_images (bool): 是否处理图片链接，默认True
+            process_titles (bool): 是否处理标题，默认True
         """
         self.md_dir = md_dir
         self.output_dir = output_dir
-        self.image_processor = ImageProcessor()
-        self.title_processor = TitleProcessor()
+        self.process_images = process_images
+        self.process_titles = process_titles
+        
+        if self.process_images:
+            self.image_processor = ImageProcessor()
+        if self.process_titles:
+            self.title_processor = TitleProcessor()
         
     def process_single_file(self, md_path: str) -> Optional[str]:
         """
@@ -34,11 +41,13 @@ class MDPreprocessor:
             with open(md_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            # 1. 处理图片链接
-            content = self.image_processor.process_images(content)
+            # 1. 处理图片链接（如果启用）
+            if self.process_images:
+                content = self.image_processor.process_images(content)
             
-            # 2. 处理标题
-            content = self.title_processor.process_titles(content)
+            # 2. 处理标题（如果启用）
+            if self.process_titles:
+                content = self.title_processor.process_titles(content)
             
             # 生成输出文件路径
             output_path = self._get_output_path(md_path)
