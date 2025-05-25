@@ -6,6 +6,7 @@ import sys
 import argparse
 from pathlib import Path
 from ..llm.async_culture_extractor import extract_culture_terms, test_extract_single_node
+from ..config import env_config
 
 def main():
     """
@@ -38,9 +39,10 @@ def main():
     args = parser.parse_args()
     
     # 处理API密钥
-    api_key = args.api_key or os.environ.get("DEEPSEEK_API_KEY")
-    if not api_key:
-        print("错误：未提供DeepSeek API密钥。请使用--api_key参数或设置DEEPSEEK_API_KEY环境变量。")
+    try:
+        api_key = env_config.get_api_key(args.api_key)
+    except ValueError as e:
+        print(f"错误：{e}")
         sys.exit(1)
     
     if args.test:

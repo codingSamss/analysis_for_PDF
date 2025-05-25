@@ -67,6 +67,15 @@ source .venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
 ```
 
+4. 配置API密钥
+```bash
+# 复制环境变量模板
+cp .env.example .env
+
+# 编辑.env文件，填入您的DeepSeek API密钥
+# DEEPSEEK_API_KEY=sk-your-deepseek-api-key-here
+```
+
 ## 使用方法
 
 ### 主程序使用方式
@@ -96,15 +105,15 @@ python -m textbook_analyzer.main extract-structure --input data/md/manual_proces
 #### 3. 提取文化词条
 ```bash
 # 同步模式
-python -m textbook_analyzer.main extract-culture --input data/json/structure --output data/json/culture --api_key YOUR_API_KEY
+python -m textbook_analyzer.main extract-culture --input data/json/structure --output data/json/culture
 
 # 异步模式（推荐，提高效率）
-python -m textbook_analyzer.main extract-culture --input data/json/structure --output data/json/culture --api_key YOUR_API_KEY --async_mode
+python -m textbook_analyzer.main extract-culture --input data/json/structure --output data/json/culture --async_mode
 ```
 
 #### 4. 生成Excel表格
 ```bash
-python -m textbook_analyzer.main generate-excel --input data/json/culture --output data/excel --api_key YOUR_API_KEY --model deepseek-reasoner
+python -m textbook_analyzer.main generate-excel --input data/json/culture --output data/excel --model deepseek-reasoner
 ```
 
 ### 独立脚本使用方式
@@ -123,10 +132,10 @@ python -m textbook_analyzer.scripts.preprocess_md --input data/md/manual --outpu
 python -m textbook_analyzer.scripts.extract_structure --input data/md/manual_processed --output data/json/structure
 
 # 异步提取文化词条
-python -m textbook_analyzer.scripts.extract_culture_async --input data/json/structure --output data/json/culture --api_key YOUR_API_KEY
+python -m textbook_analyzer.scripts.extract_culture_async --input data/json/structure --output data/json/culture
 
 # 生成Excel表格
-python -m textbook_analyzer.scripts.generate_excel --input data/json/culture --output data/excel --api_key YOUR_API_KEY
+python -m textbook_analyzer.scripts.generate_excel --input data/json/culture --output data/excel
 ```
 
 ### 处理流程说明

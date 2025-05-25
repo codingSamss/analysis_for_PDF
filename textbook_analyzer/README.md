@@ -92,13 +92,13 @@ python -m textbook_analyzer.scripts.extract_structure --input <input_file> --out
 ### 3. 提取文化词条
 
 ```bash
-python -m textbook_analyzer.scripts.extract_culture_async --input <input_dir> --output <output_dir> --api_key <your_api_key>
+python -m textbook_analyzer.scripts.extract_culture_async --input <input_dir> --output <output_dir>
 ```
 
 ### 4. 生成Excel表格
 
 ```bash
-python -m textbook_analyzer.scripts.generate_excel --input <input_dir> --output <output_dir> --api_key <your_api_key> --model <model_name>
+python -m textbook_analyzer.scripts.generate_excel --input <input_dir> --output <output_dir> --model <model_name>
 ```
 
 ## 依赖项

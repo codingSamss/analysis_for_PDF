@@ -388,8 +388,8 @@ if __name__ == "__main__":
     input_dir = "/Users/suqi3/Desktop/paper/textbook_analyzer/data/json/culture"
     output_dir = "/Users/suqi3/Desktop/paper/textbook_analyzer/data/excel"
     
-    # 设置API密钥
-    api_key = "sk-79e3978402074c46a36402ca1212fee1"  # 请替换为您的实际API密钥
+    # API密钥将从.env文件或环境变量中读取
+    api_key = None  # 让配置管理器自动处理
     
     # 设置模型（可选 "deepseek-reasoner" 或 "deepseek-chat"）
     model = "deepseek-reasoner"

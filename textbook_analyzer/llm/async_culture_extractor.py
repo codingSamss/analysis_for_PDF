@@ -6,6 +6,7 @@ import aiohttp
 import logging
 from typing import List, Dict, Any, Optional, Set
 from pathlib import Path
+from textbook_analyzer.config import env_config
 
 # 配置日志
 logging.basicConfig(
@@ -462,12 +463,8 @@ async def extract_culture_terms_async(input_dir: str, output_dir: str, api_key: 
         resume (bool): 是否从上次中断处继续
         verbose (bool): 是否显示详细信息
     """
-    if not api_key:
-        # 尝试从环境变量获取API密钥
-        api_key = os.environ.get("DEEPSEEK_API_KEY")
-        
-    if not api_key:
-        raise ValueError("未提供DeepSeek API密钥。请通过参数或DEEPSEEK_API_KEY环境变量设置。")
+    # 使用配置管理器获取API key
+    api_key = env_config.get_api_key(api_key)
     
     # 设置日志级别
     if verbose:
@@ -557,8 +554,8 @@ def test_extract_single_node(api_key: str, content: str, context_info: str = "�
     asyncio.run(test_extract_single_node_async(api_key, content, context_info))
 
 if __name__ == "__main__":
-    # 测试代码
-    api_key = "这里替换为您的DeepSeek API密钥"
+    # 测试代码 - API key 将从.env文件或环境变量中读取
+    api_key = None  # 让配置管理器自动处理
     
     # 取消下面的注释来测试单个节点提取
     # test_content = """

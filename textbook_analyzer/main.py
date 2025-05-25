@@ -9,10 +9,7 @@
 import argparse
 import os
 import sys
-from dotenv import load_dotenv
-
-# 加载环境变量
-load_dotenv()
+from textbook_analyzer.config import env_config
 
 def main():
     """
@@ -89,9 +86,10 @@ def main():
         extract_structure(args.input, args.output)
     
     elif args.command == 'extract-culture':
-        api_key = args.api_key or os.environ.get("DEEPSEEK_API_KEY")
-        if not api_key:
-            print("错误：未提供DeepSeek API密钥，请通过--api_key参数或环境变量DEEPSEEK_API_KEY提供")
+        try:
+            api_key = env_config.get_api_key(args.api_key)
+        except ValueError as e:
+            print(f"错误：{e}")
             sys.exit(1)
             
         if args.async_mode:
@@ -102,9 +100,10 @@ def main():
             extract_culture(args.input, args.output, api_key)
     
     elif args.command == 'generate-excel':
-        api_key = args.api_key or os.environ.get("DEEPSEEK_API_KEY")
-        if not api_key:
-            print("错误：未提供DeepSeek API密钥，请通过--api_key参数或环境变量DEEPSEEK_API_KEY提供")
+        try:
+            api_key = env_config.get_api_key(args.api_key)
+        except ValueError as e:
+            print(f"错误：{e}")
             sys.exit(1)
             
         from textbook_analyzer.analysis.culture_summarizer import summarize_culture_terms

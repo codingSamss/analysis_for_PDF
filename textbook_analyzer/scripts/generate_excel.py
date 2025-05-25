@@ -6,6 +6,7 @@ import sys
 import argparse
 from pathlib import Path
 from ..analysis.culture_summarizer import summarize_culture_terms
+from ..config import env_config
 
 def main():
     """
@@ -17,7 +18,7 @@ def main():
                       help='输入目录路径')
     parser.add_argument('--output', type=str, default='textbook_analyzer/data/excel',
                       help='输出目录路径')
-    parser.add_argument('--api_key', type=str, required=True,
+    parser.add_argument('--api_key', type=str,
                       help='DeepSeek API密钥')
     parser.add_argument('--model', type=str, default='deepseek-reasoner',
                       choices=['deepseek-reasoner', 'deepseek-chat'],
@@ -25,6 +26,13 @@ def main():
     
     # 解析命令行参数
     args = parser.parse_args()
+    
+    # 处理API密钥
+    try:
+        api_key = env_config.get_api_key(args.api_key)
+    except ValueError as e:
+        print(f"错误：{e}")
+        sys.exit(1)
     
     # 确保输入输出目录存在
     os.makedirs(args.input, exist_ok=True)
@@ -35,7 +43,7 @@ def main():
     print(f"输出目录: {args.output}")
     
     # 调用整理函数
-    summarize_culture_terms(args.input, args.output, args.api_key, args.model)
+    summarize_culture_terms(args.input, args.output, api_key, args.model)
     
     print("文化词条整理完成！Excel表格已生成。")
 
